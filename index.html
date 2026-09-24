@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solid ASCII 3D Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --panel-bg: #141414;
+            --border-color: #262626;
+            --border-hover: #404040;
+            --text-main: #e5e5e5;
+            --text-muted: #737373;
+            --accent: #ffffff;
+            --accent-dim: #262626;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Fira Code', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+        }
+
+        header {
+            margin-bottom: 20px;
+            text-align: center;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        .header-titles {
+            text-align: left;
+        }
+
+        h1 {
+            font-size: 1.15rem;
+            margin: 0 0 4px 0;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 0.75rem;
+            margin: 0;
+            color: var(--text-muted);
+        }
+
+        .math-info-btn {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .math-info-btn:hover {
+            border-color: var(--border-hover);
+            background: var(--border-color);
+        }
+
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .canvas-container {
+            position: relative;
+            background-color: #000000;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        .canvas-container:active {
+            cursor: grabbing;
+        }
+
+        canvas {
+            display: block;
+            width: 560px;
+            height: 380px;
+            image-rendering: pixelated;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 220px;
+        }
+
+        .control-group {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 4px;
+        }
+
+        .control-group h3 {
+            font-size: 0.7rem;
+            margin: 0 0 8px 0;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 5px;
+        }
+
+        button {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+
+        button:hover {
+            border-color: var(--border-hover);
+            color: var(--accent);
+        }
+
+        button.active {
+            background: var(--accent-dim);
+            border-color: var(--border-hover);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        .checkbox-label:last-child {
+            margin-bottom: 0;
+        }
+
+        input[type="checkbox"] {
+            accent-color: #ffffff;
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #ffffff;
+            margin-top: 4px;
+            cursor: pointer;
+            background: var(--border-color);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(2px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            width: 600px;
+            max-width: 90vw;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 0.9rem;
+            margin: 0;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text-main);
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            color: var(--text-main);
+        }
+
+        .modal-body h4 {
+            color: var(--accent);
+            margin: 16px 0 6px 0;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-body h4:first-child {
+            margin-top: 0;
+        }
+
+        .modal-body p {
+            color: #a3a3a3;
+            margin-bottom: 8px;
+        }
+
+        .modal-body code {
+            background: var(--bg-color);
+            padding: 2px 4px;
+            border-radius: 3px;
+            border: 1px solid var(--border-color);
+            font-family: 'Fira Code', monospace;
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="header-titles">
+            <h1>ASCII 3D Engine</h1>
+            <p>Monochrome Solid & Wireframe Renderer</p>
+        </div>
+        <button class="math-info-btn" id="openMathModal">Math & Code Docs</button>
+    </header>
+
+    <div class="main-layout">
+        <div class="canvas-container">
+            <canvas id="asciiCanvas" width="560" height="380"></canvas>
+        </div>
+
+        <div class="sidebar">
+            <div class="control-group">
+                <h3>Shape</h3>
+                <div class="btn-grid" id="shapeButtons">
+                    <button data-shape="cube" class="active">Cube</button>
+                    <button data-shape="pyramid">Square Pyramid</button>
+                    <button data-shape="icosahedron">Icosahedron</button>
+                    <button data-shape="donut">Donut (Torus)</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Display</h3>
+                <label class="checkbox-label">
+                    <span>Solid Shaded</span>
+                    <input type="checkbox" id="toggleSolid" checked>
+                </label>
+                <label class="checkbox-label">
+                    <span>Wireframe</span>
+                    <input type="checkbox" id="toggleWireframe" checked>
+                </label>
+                <label class="checkbox-label">
+                    <span>Vertices</span>
+                    <input type="checkbox" id="toggleVertices">
+                </label>
+            </div>
+
+            <div class="control-group">
+                <h3>Animation</h3>
+                <label class="checkbox-label">
+                    <span>Auto Spin</span>
+                    <input type="checkbox" id="toggleSpin" checked>
+                </label>
+                <div style="margin-top: 6px;">
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">Speed</span>
+                    <input type="range" id="speedRange" min="0" max="2" step="0.1" value="0.8">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="mathModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Mathematical Principles & Code Integration</h2>
+            <button class="modal-close" id="closeMathModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <h4>1. 3D Rotation Matrices</h4>
+            <p>To rotate points in 3D space around origin coordinates, trigonometric rotation matrices are applied for X, Y, and Z axes. For example, rotating around the X-axis:</p>
+            <p><code>x' = x</code><br><code>y' = y·cos(θ) - z·sin(θ)</code><br><code>z' = y·sin(θ) + z·cos(θ)</code></p>
+
+            <h4>2. Perspective Projection</h4>
+            <p>To map 3D coordinates to a 2D text cell grid, a perspective division formula scales points inversely relative to depth <code>z</code>:</p>
+            <p><code>projX = ((x * aspect) * fov / z) * (cols / 2) + (cols / 2)</code></p>
+
+            <h4>3. Rasterization & Flat Shading</h4>
+            <p>Polygons are split into triangles and rasterized using scanlines with a <strong>Z-buffer</strong> to hide occluded pixels. Surface normals computed via cross products are dot-multiplied against directional light to determine shade density characters from <code>".,-~:;=!?*#$@"</code>.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('asciiCanvas');
+const ctx = canvas.getContext('2d');
+
+const fontSize = 11;
+ctx.font = `${fontSize}px 'Fira Code', monospace`;
+const charWidth = ctx.measureText('M').width;
+const charHeight = fontSize * 1.05;
+
+const cols = Math.floor(canvas.width / charWidth);
+const rows = Math.floor(canvas.height / charHeight);
+
+const fontAspectCorrection = charWidth / charHeight;
+const SHADE_CHARS = ".,-~:;=!?*#$@";
+
+const modalOverlay = document.getElementById('mathModal');
+document.getElementById('openMathModal').addEventListener('click', () => {
+    modalOverlay.classList.add('open');
+});
+document.getElementById('closeMathModal').addEventListener('click', () => {
+    modalOverlay.classList.remove('open');
+});
+modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) {
+        modalOverlay.classList.remove('open');
+    }
+});
+
+function generateDonut(R2, R1, segR2, segR1) {
+    const vertices = [];
+    const faces = [];
+    const edges = [];
+
+    for (let i = 0; i < segR2; i++) {
+        const phi = (i * 2 * Math.PI) / segR2;
+        const cosPhi = Math.cos(phi);
+        const sinPhi = Math.sin(phi);
+
+        for (let j = 0; j < segR1; j++) {
+            const theta = (j * 2 * Math.PI) / segR1;
+            const cosTheta = Math.cos(theta);
+            const sinTheta = Math.sin(theta);
+
+            const x = (R2 + R1 * cosTheta) * cosPhi;
+            const y = R1 * sinTheta;
+            const z = (R2 + R1 * cosTheta) * sinPhi;
+            vertices.push([x, y, z]);
+        }
+    }
+
+    for (let i = 0; i < segR2; i++) {
+        const nextI = (i + 1) % segR2;
+        for (let j = 0; j < segR1; j++) {
+            const nextJ = (j + 1) % segR1;
+
+            const current = i * segR1 + j;
+            const right = nextI * segR1 + j;
+            const down = i * segR1 + nextJ;
+            const diagonal = nextI * segR1 + nextJ;
+
+            faces.push([current, right, down]);
+            faces.push([down, right, diagonal]);
+
+            edges.push([current, right]);
+            edges.push([current, down]);
+        }
+    }
+
+    return { vertices, faces, edges };
+}
+
+const GEOMETRIES = {
+    cube: {
+        vertices: [
+            [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+            [-1, -1,  1], [1, -1,  1], [1, 1,  1], [-1, 1,  1]
+        ],
+        faces: [
+            [4,5,6], [4,6,7],
+            [1,0,3], [1,3,2],
+            [0,4,7], [0,7,3],
+            [5,1,2], [5,2,6],
+            [7,6,2], [7,2,3],
+            [0,1,5], [0,5,4]
+        ],
+        edges: [
+            [0,1],[1,2],[2,3],[3,0],
+            [4,5],[5,6],[6,7],[7,4],
+            [0,4],[1,5],[2,6],[3,7]
+        ]
+    },
+    pyramid: {
+        vertices: [
+            [-1, -1,  1], [1, -1,  1], [1, -1, -1], [-1, -1, -1], [0, 1.2, 0]
+        ],
+        faces: [
+            [0,2,1], [0,3,2],
+            [0,1,4], [1,2,4], [2,3,4], [3,0,4]
+        ],
+        edges: [
+            [0,1],[1,2],[2,3],[3,0],
+            [0,4],[1,4],[2,4],[3,4]
+        ]
+    },
+    icosahedron: {
+        vertices: (function() {
+            const t = (1 + Math.sqrt(5)) / 2;
+            return [
+                [-1,  t,  0], [ 1,  t,  0], [-1, -t,  0], [ 1, -t,  0],
+                [ 0, -1,  t], [ 0,  1,  t], [ 0, -1, -t], [ 0,  1, -t],
+                [ t,  0, -1], [ t,  0,  1], [-t,  0, -1], [-t,  0,  1]
+            ];
+        })(),
+        faces: [
+            [0,11,5], [0,5,1], [0,1,7], [0,7,10], [0,10,11],
+            [1,5,9], [5,11,4], [11,10,2], [10,7,6], [7,1,8],
+            [3,9,4], [3,4,2], [3,2,6], [3,6,8], [3,8,9],
+            [4,9,5], [2,4,11], [6,2,10], [8,6,7], [9,8,1]
+        ],
+        edges: [
+            [0,11],[0,5],[0,1],[0,7],[0,10],
+            [1,5],[5,9],[9,4],[4,11],[11,10],
+            [10,7],[7,8],[8,1],[1,9],[4,2],
+            [11,2],[10,6],[7,6],[8,6],[3,9],
+            [3,4],[3,2],[3,6],[3,8]
+        ]
+    },
+    donut: generateDonut(1.2, 0.5, 14, 10)
+};
+
+let currentShapeKey = 'cube';
+let angleX = 0.4;
+let angleY = 0.6;
+let angleZ = 0;
+let isAutoSpin = true;
+let speedMultiplier = 0.8;
+let showSolid = true;
+let showWireframe = true;
+let showVertices = false;
+
+let isDragging = false;
+let mouseX = 0;
+let mouseY = 0;
+
+const shapeButtonsContainer = document.getElementById('shapeButtons');
+shapeButtonsContainer.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+        document.querySelectorAll('#shapeButtons button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentShapeKey = e.target.dataset.shape;
+    }
+});
+
+document.getElementById('toggleSolid').addEventListener('change', (e) => { showSolid = e.target.checked; });
+document.getElementById('toggleWireframe').addEventListener('change', (e) => { showWireframe = e.target.checked; });
+document.getElementById('toggleVertices').addEventListener('change', (e) => { showVertices = e.target.checked; });
+document.getElementById('toggleSpin').addEventListener('change', (e) => { isAutoSpin = e.target.checked; });
+document.getElementById('speedRange').addEventListener('input', (e) => { speedMultiplier = parseFloat(e.target.value); });
+
+const canvasContainer = document.querySelector('.canvas-container');
+canvasContainer.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - mouseX;
+    const dy = e.clientY - mouseY;
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+
+    angleY += dx * 0.01;
+    angleX += dy * 0.01;
+});
+
+window.addEventListener('mouseup', () => { isDragging = false; });
+
+canvasContainer.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+        isDragging = true;
+        mouseX = e.touches[0].clientX;
+        mouseY = e.touches[0].clientY;
+    }
+});
+window.addEventListener('touchmove', (e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - mouseX;
+    const dy = e.touches[0].clientY - mouseY;
+    mouseX = e.touches[0].clientX;
+    mouseY = e.touches[0].clientY;
+
+    angleY += dx * 0.01;
+    angleX += dy * 0.01;
+});
+window.addEventListener('touchend', () => { isDragging = false; });
+
+function rotateX(x, y, z, angle) {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    return [x, y * cos - z * sin, y * sin + z * cos];
+}
+
+function rotateY(x, y, z, angle) {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    return [x * cos + z * sin, y, -x * sin + z * cos];
+}
+
+function rotateZ(x, y, z, angle) {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    return [x * cos - y * sin, x * sin + y * cos, z];
+}
+
+function drawLine(x0, y0, x1, y1, buffer, char = '#') {
+    const dx = Math.abs(x1 - x0);
+    const dy = Math.abs(y1 - y0);
+    const sx = (x0 < x1) ? 1 : -1;
+    const sy = (y0 < y1) ? 1 : -1;
+    let err = dx - dy;
+
+    while (true) {
+        if (x0 >= 0 && x0 < cols && y0 >= 0 && y0 < rows) {
+            buffer[y0][x0] = char;
+        }
+        if (x0 === x1 && y0 === y1) break;
+        const e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+
+function rasterizeTriangle(p0, p1, p2, shadeChar, zBuffer, charBuffer) {
+    const minX = Math.max(0, Math.floor(Math.min(p0[0], p1[0], p2[0])));
+    const maxX = Math.min(cols - 1, Math.ceil(Math.max(p0[0], p1[0], p2[0])));
+    const minY = Math.max(0, Math.floor(Math.min(p0[1], p1[1], p2[1])));
+    const maxY = Math.min(rows - 1, Math.ceil(Math.max(p0[1], p1[1], p2[1])));
+
+    const x0 = p0[0], y0 = p0[1], z0 = p0[2];
+    const x1 = p1[0], y1 = p1[1], z1 = p1[2];
+    const x2 = p2[0], y2 = p2[1], z2 = p2[2];
+
+    const denominator = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2);
+    if (Math.abs(denominator) < 1e-9) return;
+
+    for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+            const alpha = ((y1 - y2) * (x - x2) + (x2 - x1) * (y - y2)) / denominator;
+            const beta  = ((y2 - y0) * (x - x2) + (x0 - x2) * (y - y2)) / denominator;
+            const gamma = 1.0 - alpha - beta;
+
+            if (alpha >= 0 && beta >= 0 && gamma >= 0) {
+                const depth = alpha * z0 + beta * z1 + gamma * z2;
+                if (depth < zBuffer[y][x]) {
+                    zBuffer[y][x] = depth;
+                    charBuffer[y][x] = shadeChar;
+                }
+            }
+        }
+    }
+}
+
+function render() {
+    let charBuffer = Array(rows).fill(0).map(() => Array(cols).fill(' '));
+    let zBuffer = Array(rows).fill(0).map(() => Array(cols).fill(Infinity));
+
+    const shape = GEOMETRIES[currentShapeKey];
+
+    const transformedVertices = shape.vertices.map(v => {
+        let [x, y, z] = rotateX(v[0], v[1], v[2], angleX);
+        [x, y, z] = rotateY(x, y, z, angleY);
+        [x, y, z] = rotateZ(x, y, z, angleZ);
+        
+        const distance = 4.2;
+        z += distance;
+
+        const fov = 1.6;
+        const projX = ((x * fontAspectCorrection) * fov / z) * (cols / 2) + (cols / 2);
+        const projY = (y * fov / z) * (rows / 2) + (rows / 2);
+
+        return {
+            screen: [projX, projY, z],
+            world3D: [x, y, z]
+        };
+    });
+
+    if (showSolid) {
+        const lightDir = [0.577, 0.577, -0.577];
+
+        shape.faces.forEach(face => {
+            const v0 = transformedVertices[face[0]];
+            const v1 = transformedVertices[face[1]];
+            const v2 = transformedVertices[face[2]];
+
+            const ax = v1.world3D[0] - v0.world3D[0];
+            const ay = v1.world3D[1] - v0.world3D[1];
+            const az = v1.world3D[2] - v0.world3D[2];
+
+            const bx = v2.world3D[0] - v0.world3D[0];
+            const by = v2.world3D[1] - v0.world3D[1];
+            const bz = v2.world3D[2] - v0.world3D[2];
+
+            let nx = ay * bz - az * by;
+            let ny = az * bx - ax * bz;
+            let nz = ax * by - ay * bx;
+
+            const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+            if (len === 0) return;
+            nx /= len; ny /= len; nz /= len;
+
+            let intensity = nx * lightDir[0] + ny * lightDir[1] + nz * lightDir[2];
+            intensity = Math.max(0.15, intensity); 
+
+            const charIdx = Math.floor(intensity * (SHADE_CHARS.length - 1));
+            const shadeChar = SHADE_CHARS[Math.min(SHADE_CHARS.length - 1, Math.max(0, charIdx))];
+
+            rasterizeTriangle(v0.screen, v1.screen, v2.screen, shadeChar, zBuffer, charBuffer);
+        });
+    }
+
+    if (showWireframe) {
+        shape.edges.forEach(edge => {
+            const p1 = transformedVertices[edge[0]].screen;
+            const p2 = transformedVertices[edge[1]].screen;
+            drawLine(Math.round(p1[0]), Math.round(p1[1]), Math.round(p2[0]), Math.round(p2[1]), charBuffer, '·');
+        });
+    }
+
+    if (showVertices) {
+        transformedVertices.forEach(v => {
+            const sx = Math.round(v.screen[0]);
+            const sy = Math.round(v.screen[1]);
+            if (sx >= 0 && sx < cols && sy >= 0 && sy < rows) {
+                charBuffer[sy][sx] = 'O';
+            }
+        });
+    }
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#ffffff';
+    for (let y = 0; y < rows; y++) {
+        const lineStr = charBuffer[y].join('');
+        ctx.fillText(lineStr, 0, (y + 1) * charHeight - 2);
+    }
+
+    if (isAutoSpin) {
+        angleX += 0.012 * speedMultiplier;
+        angleY += 0.018 * speedMultiplier;
+        angleZ += 0.006 * speedMultiplier;
+    }
+
+    requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
+</script>
+
+</body>
+</html>
